@@ -1,6 +1,17 @@
 workflows:
-    sample-workflow:
-        name: Codemagic Sample Workflow
-        max_build_duration: 120
-        instance_type: mac_mini_m2
-        
+  liner-ios:
+    name: Liner iOS Alpha 1
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+
+    scripts:
+      - name: Extract Liner source
+        script: |
+          unzip -o Liner-iOS-Alpha1-build-ready.zip -d liner-source
+
+      - name: Check iOS project
+        script: |
+          find liner-source -name "*.xcodeproj" -o -name "*.xcworkspace"
+
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log\
