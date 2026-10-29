@@ -43,6 +43,9 @@ jobs:
           text = path.read_text().replace("public let pluginMethods =", "public let pluginMethods: [CAPPluginMethod] =")
           text = text.replace('[CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise)]', '[CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise)].compactMap { $0 }')
           path.write_text(text)
+          path = Path("scripts/build-ios-ipa.sh")
+          text = path.read_text().replace('xcrun lipo -verify_arch arm64 "$app/$executable"', 'xcrun lipo "$app/$executable" -verify_arch arm64')
+          path.write_text(text)
           PY
       - uses: actions/setup-node@v4
         with:
