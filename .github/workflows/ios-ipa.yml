@@ -1,0 +1,59 @@
+name: Build Liner iOS IPA
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - Liner-iOS-Alpha1-build-ready.zip
+permissions:
+  contents: read
+concurrency:
+  group: liner-ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: source/Liner-iOS
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify and unpack source
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo "ea34ea2c5a1689f9f8e3a7a2cc576ca4ede9f0dcf629b2d454cb917bca4f4e89  Liner-iOS-Alpha1-build-ready.zip" | shasum -a 256 -c -
+          unzip -q Liner-iOS-Alpha1-build-ready.zip -d source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: source/Liner-iOS/package-lock.json
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test TypeScript bridge
+        run: |
+          npm run mobile:test
+          npx tsc --noEmit
+      - name: Build frontend and sync iOS
+        run: npm run ios:sync
+      - name: Compile and package unsigned device IPA
+        run: bash scripts/build-ios-ipa.sh
+      - name: Upload IPA
+        uses: actions/upload-artifact@v7
+        with:
+          name: Liner-iOS-Alpha1-unsigned
+          path: source/Liner-iOS/artifacts/Liner-iOS-Alpha1-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-build-log
+          path: source/Liner-iOS/artifacts/xcodebuild.log
+          if-no-files-found: ignore
+          retention-days: 7
